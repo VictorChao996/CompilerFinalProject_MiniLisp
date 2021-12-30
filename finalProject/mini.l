@@ -1,5 +1,6 @@
+%option noyywrap
 %{
-#include "y.tab.h"
+#include "mini.tab.h"
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -53,7 +54,3 @@ BOOL_VAL_FALSE "#f"
 
 
 %%
-int main(int argc, char *argv[]) {
-    yylex();
-    return(0);
-}

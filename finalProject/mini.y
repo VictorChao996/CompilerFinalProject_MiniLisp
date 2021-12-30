@@ -2,12 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 //warning: captial letter word represent token 
+int yylex();
 void yyerror(const char*message);
 %}
 %union{
     int intval,boolval;
 }
-%type program stmt stmts print_stmt define_stmt exp num_op logical_op
+%type program stmts print_stmt define_stmt exp num_op logical_op
 %type exps_a exps_mul
 %type and_op or_op not_op
 %type variable
@@ -19,12 +20,17 @@ void yyerror(const char*message);
 %token <intval> ID
 %token <intval> NUMBER
 %token <boolval> BOOL
+%%
 program : stmts
     ;
-stmts : stmts stmt
+stmts : stmt stmts
       | stmt
       ;
-print-stmt : '(' PRINTNUM exp ')'
+stmt : exp
+      | define_stmt
+      | print_stmt
+      ;  
+print_stmt : '(' PRINTNUM exp ')'
             | '(' PRINTBOOL exp ')'
             ;
 exp : BOOL
@@ -70,7 +76,7 @@ equal : '(' EQUAL exp exp_equal ')'
 exp_equal : exp_equal exp
           | exp
            ;   
-logical-op : and_op
+logical_op : and_op
             | or_op
             | not_op
             ;
@@ -120,7 +126,8 @@ else_exp : exp
 %%
 void yyerror(const char *message)
 {
-    fprintf(stderr, "%s\n", message);
+    //fprintf(stderr, "%s\n", message);
+    printf("syntax error\n");
 }
 int main(int argc, char *argv[]){
     yyparse();

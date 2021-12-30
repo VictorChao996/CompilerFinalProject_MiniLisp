@@ -1,0 +1,7 @@
+lex.yy.c
+lex.yy.o
+mini.tab.c
+mini.tab.h
+mini.tab.o
+miniLisp
+.ignore/

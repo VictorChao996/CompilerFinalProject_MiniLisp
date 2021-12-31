@@ -8,13 +8,14 @@
 /* perliminary definitions */
 letter [a-z]+
 digit [0-9] 
-    /*tab newline enter space*/
+/*tab newline enter space*/
 separator [\t|\n|\r| ]
 /* token definitions */
 NUMBER  0|[1-9]{digit}*|-[1-9]{digit}*
-ID      {letter}({letter}|{digit}|-)*
+ID      {letter}({letter}|{digit}|\-)*
 BOOL_VAL_TRUE  "#t"
 BOOL_VAL_FALSE "#f"
+PARA [\(\)]
 %%
 "+" {return ADD;}
 "-" { return SUB;}
@@ -24,7 +25,7 @@ BOOL_VAL_FALSE "#f"
 ">" { return GREATER;}
 "<" { return SMALLER;}
 "=" { return EQUAL;}
-
+"("|")" {return yytext[0];}
 "and" { return AND;}
 "or" { return OR;}
 "not" { return NOT;}
@@ -37,20 +38,30 @@ BOOL_VAL_FALSE "#f"
 "print-bool" {return PRINTBOOL;}
 "("|")" {return yytext[0];}
 
-{ID} {}
+{ID} {
+    char *temp = (char*)malloc(strlen(yytext));
+    for(int i=0; i<strlen(yytext); i++)
+    {
+        yylval.id = temp;
+    }
+    return ID;
+}
 {NUMBER} {
-    yylval.intVal = atoi(yytext);
+    yylval.intval = atoi(yytext);
     return(NUMBER);
 }
 {BOOL_VAL_TRUE} {
-    yylval.boolval = 1;
+    yylval.intval = 1;
     return BOOL;
 }
 {BOOL_VAL_FALSE} {
-    yylval.boolval = 0;
+    yylval.intval = 0;
     return BOOL;
 }
 {separator} {/*do nothing*/}
-
+. {
+    printf("Unexpected Character %s\n", yytext);
+    exit(1);
+}
 
 %%

@@ -7,8 +7,8 @@ int yylex();
 void yyerror(const char*message);
 
 enum expType {
-    plusType, subType, nulType, divType, modType, 
-    andType, orType, notType , equType, greaterType, 
+    plusType, minusType, mulType, divType, modType, 
+    andType, orType, notType , equalType, greaterType, 
     smallerType, numberType, noneType
 };
 //node for different exp
@@ -36,9 +36,9 @@ int CountExpValue(Node* exp);
 %token <intval> BOOL
 
 %type <exp_node> program stmts stmt print_stmt define_stmt exp num_op logical_op
-%type <exp_node> exps_a exps_mul
+%type <exp_node> exps_a exps_mul exps_equal exps_or
 %type <exp_node> and_op or_op not_op
-%type <exp_node> variable exp_equal
+%type <exp_node> variable 
 %type <exp_node> last_exp if_exp test_exp then_exp else_exp
 %type <exp_node> fun_exp fun_ids fun_body fun_call  ids
 %type <exp_node> plus minus multiply divide modulus greater smaller equal
@@ -96,29 +96,85 @@ num_op : plus {$$ = $1;}
         | smaller {$$ = $1;}
         | equal {$$ = $1;}
         ;
-plus : '(' ADD exp exps_a ')'
+plus : '(' ADD exp exps_a ')' {
+        Node* newNode = CreateExpNode(0, "", plusType);
+        newNode->left = $3;
+        newNode->right = $4;
+        $$ = newNode;
+    }
     ;
-exps_a : exp
-       | exps_a exp
+exps_a : exp {$$ = $1;}
+       | exps_a exp {
+           Node* newNode = CreateExpNode(0, "", plusType);
+           newNode->left = $1;
+           newNode->right = $2;
+           $$ = newNode;
+       }
        ;
-minus : '(' SUB exp exp ')'
+minus : '(' SUB exp exp ')' {
+        Node* newNode = CreateExpNode(0, "", minusType);
+        newNode->left = $3;
+        newNode->right = $4;
+        $$ = newNode;
+      }
       ;
-multiply : '(' MUL exp exps_mul ')'
+multiply : '(' MUL exp exps_mul ')' {
+            Node* newNode = CreateExpNode(0, "", mulType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$ = newNode;
+         }
          ;
-exps_mul : exp
-         | exps_mul exp
+exps_mul : exp {$$ = $1;}
+         | exps_mul exp {
+            Node* newNode = CreateExpNode(0, "", mulType);
+            newNode->left = $1;
+            newNode->right = $2;
+            $$ = newNode;
+
+         }
          ;
-divide : '(' DIV exp exp ')'
+divide : '(' DIV exp exp ')' {
+            Node* newNode = CreateExpNode(0, "", divType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$ = newNode;
+        }
         ;
-modulus : '(' MOD exp exp ')'
+modulus : '(' MOD exp exp ')' {
+            Node* newNode = CreateExpNode(0, "", modType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$ = newNode;
+        }
         ;
-greater : '(' GREATER exp exp ')'
+greater : '(' GREATER exp exp ')' {
+            Node* newNode = CreateExpNode(0, "", greaterType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$=newNode;
+        }
         ;
-smaller : '(' SMALLER exp exp ')'
+smaller : '(' SMALLER exp exp ')' {
+            Node* newNode = CreateExpNode(0, "", smallerType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$=newNode;
+        }
         ;
-equal : '(' EQUAL exp exp_equal ')'
+equal : '(' EQUAL exp exps_equal ')' {
+            Node* newNode = CreateExpNode(0, "", equalType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$=newNode;
+        }
         ;
-exp_equal : exp exp_equal
+exps_equal : exp exps_equal {
+            Node* newNode = CreateExpNode(0, "", equalType);
+            newNode->left = $1;
+            newNode->right = $2;
+            $$=newNode;
+          }
           | exp{
             $$ = $1;
           }
@@ -133,17 +189,41 @@ logical_op : and_op{
                 $$ = $1;
             }    
             ;
-and_op : '(' AND exp exps_a ')'
+and_op : '(' AND exp exps_a ')' {
+            Node* newNode = CreateExpNode(0,"",andType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$ = newNode;
+        }
         ;
-exp_a : exp
-       | exps_a exp 
+exps_a : exp {$$ = $1;}
+       | exps_a exp {
+            Node* newNode = CreateExpNode(0,"",andType);
+            newNode->left = $1;
+            newNode->right = $2;
+            $$ = newNode;
+       }
        ;
-or_op : '(' OR exp exps_or ')'
+or_op : '(' OR exp exps_or ')' {
+            Node* newNode = CreateExpNode(0,"",orType);
+            newNode->left = $3;
+            newNode->right = $4;
+            $$ = newNode;
+      }
       ;
-exps_or : exps_or exp
-        | exp
+exps_or : exps_or exp {
+            Node* newNode = CreateExpNode(0,"",orType);
+            newNode->left = $1;
+            newNode->right = $2;
+            $$ = newNode;
+        }
+        | exp {$$ = $1;}
         ;
-not_op : '(' NOT exp ')'
+not_op : '(' NOT exp ')' {
+            Node* newNode = CreateExpNode(0,"",notType);
+            newNode->left = $3;
+            $$ = newNode;
+        }
         ;
 define_stmt : '(' DEFINE ID exp ')'
             ;
@@ -191,6 +271,7 @@ else_exp : exp {
         }
         ;      
 %%
+//create and init node value
 Node* CreateExpNode(int value, char* name, enum expType type)
 {
     Node* newNode = (Node*) malloc(sizeof(Node));
@@ -201,6 +282,7 @@ Node* CreateExpNode(int value, char* name, enum expType type)
     newNode->type = type;
     return newNode;
 }
+//count the current exp value (pre-order traversal)
 int CountExpValue(Node* exp)
 {
     if(exp == NULL)
@@ -211,7 +293,30 @@ int CountExpValue(Node* exp)
     switch(exp->type){
         case numberType:
             return exp->value;
-        
+        case plusType:
+            return left+right;
+        case minusType:
+            return left-right;
+        case mulType:
+            return left*right;
+        case divType:
+            return left/right;
+        case modType:
+            return left%right;
+        case greaterType:
+            return left>right;
+        case smallerType:
+            return left<right;
+        case equalType:
+            return left==right;
+        case andType:
+            return left&&right;
+        case orType:
+            return left||right;
+        case notType:
+            return !left;
+        default:
+            return 0;
     }
 
 }

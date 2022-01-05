@@ -9,7 +9,7 @@ void yyerror(const char*message);
 enum expType {
     plusType, minusType, mulType, divType, modType, 
     andType, orType, notType , equalType, greaterType, 
-    smallerType, numberType, noneType
+    smallerType, numberType, noneType,variableType
 };
 //node for different exp
 typedef struct node{
@@ -20,8 +20,22 @@ typedef struct node{
     enum expType type;
 }Node;
 
+typedef struct variable{
+    char* var_name;
+    int var_value;
+
+}Var;
+
+//store different variable value
+Var varRecord[100];
+int varCurrentPointer = -1;
+
 Node* CreateExpNode(int value, char* name, enum expType);
 int CountExpValue(Node* exp);
+int getVarRecordPointer(char *name);
+void createVar(char* name, int exp_value);
+
+
 %}
 %union {
     int intval;
@@ -225,9 +239,16 @@ not_op : '(' NOT exp ')' {
             $$ = newNode;
         }
         ;
-define_stmt : '(' DEFINE ID exp ')'
+define_stmt : '(' DEFINE ID exp ')' {
+                createVar($3, CountExpValue($4));
+            }
             ;
-variable : ID
+variable : ID {
+            int varPos = getVarRecordPointer($1);
+            int varValue = varRecord[varPos].var_value;
+            Node* newNode = CreateExpNode(varValue,$1,variableType);
+            $$ = newNode;
+        }
          ;
 fun_exp : '(' FUN fun_ids fun_body ')'
         ;
@@ -252,10 +273,16 @@ param : exp
       ;
 last_exp : exp
          ;
-fun_name : variable
+fun_name : variable {
+            $$ = getVarRecordPointer($1->name);
+         }
          ;
 if_exp : '(' IF test_exp then_exp else_exp ')' {
-
+            int boolValue = CountExpValue($3);
+            if(boolValue == 1)
+                $$ = $4;
+            else
+                $$ = $5;
         }
         ;
 test_exp : exp {
@@ -287,7 +314,7 @@ int CountExpValue(Node* exp)
 {
     if(exp == NULL)
         return 0;
-    int right=0, left=0;
+    int right=0, left=0, temp;
     right = CountExpValue(exp->right);
     left = CountExpValue(exp->left);
     switch(exp->type){
@@ -315,10 +342,36 @@ int CountExpValue(Node* exp)
             return left||right;
         case notType:
             return !left;
+        case variableType:
+            temp = getVarRecordPointer(exp->name);
+            return varRecord[temp].var_value;
         default:
             return 0;
     }
 
+}
+int getVarRecordPointer(char *name)
+{
+    for(int i=0;i<=varCurrentPointer;i++)
+    {
+        //find variable position
+        if(strcmp(name, varRecord[i].var_name) == 0)
+            return i;
+    }
+    //can't find this variable
+    return -1;
+}
+void createVar(char* name, int exp_value)
+{
+    Node* newNode = CreateExpNode(exp_value,name, variableType);
+    int varPos = getVarRecordPointer(name);
+    //variable name not find(not declare yet)
+    if(varPos == -1)
+    {
+        varCurrentPointer++;
+        varRecord[varCurrentPointer].var_name = name;
+        varRecord[varCurrentPointer].var_value = exp_value;
+    }
 }
 void yyerror(const char *message)
 {

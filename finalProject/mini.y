@@ -9,8 +9,9 @@ void yyerror(const char*message);
 enum expType {
     plusType, minusType, mulType, divType, modType, 
     andType, orType, notType , equalType, greaterType, 
-    smallerType, numberType, noneType,variableType
+    smallerType, numberType, noneType,variableType, functionType
 };
+
 //node for different exp
 typedef struct node{
     char *name;
@@ -19,21 +20,32 @@ typedef struct node{
     struct node *right;
     enum expType type;
 }Node;
-
 typedef struct variable{
     char* var_name;
     int var_value;
 
 }Var;
 
+typedef struct function{
+    char* fun_name;
+    int paraCount;
+    char** params;
+    Node* funBody;
+}Fun;
+
 //store different variable value
 Var varRecord[100];
 int varCurrentPointer = -1;
+//store different function value
+Fun funRecord[100];
+int funCurrentPointer = -1;
 
 Node* CreateExpNode(int value, char* name, enum expType);
 int CountExpValue(Node* exp);
 int getVarRecordPointer(char *name);
+int getFunRecordPointer(char *name);
 void createVar(char* name, int exp_value);
+Fun* createFun();
 
 
 %}
@@ -211,7 +223,7 @@ and_op : '(' AND exp exps_a ')' {
         }
         ;
 exps_a : exp {$$ = $1;}
-       | exps_a exp {
+       | exp exps_a {
             Node* newNode = CreateExpNode(0,"",andType);
             newNode->left = $1;
             newNode->right = $2;
@@ -225,7 +237,7 @@ or_op : '(' OR exp exps_or ')' {
             $$ = newNode;
       }
       ;
-exps_or : exps_or exp {
+exps_or : exp exps_or {
             Node* newNode = CreateExpNode(0,"",orType);
             newNode->left = $1;
             newNode->right = $2;
@@ -240,24 +252,42 @@ not_op : '(' NOT exp ')' {
         }
         ;
 define_stmt : '(' DEFINE ID exp ')' {
-                createVar($3, CountExpValue($4));
+                //printf("define_stmt\n");
+                /*if($4->type == functionType)
+                {
+                    //create function record here
+                }
+                else if($4->type == variableType)
+                    createVar($3, CountExpValue($4));*/
+                int varPos = getVarRecordPointer($3);
+                if(varPos == -1)
+                    createVar($3, CountExpValue($4));
+                else
+                    varRecord[varPos].var_value = CountExpValue($4);
             }
             ;
 variable : ID {
+            //printf("variable_ ID\n");
             int varPos = getVarRecordPointer($1);
             int varValue = varRecord[varPos].var_value;
             Node* newNode = CreateExpNode(varValue,$1,variableType);
             $$ = newNode;
         }
          ;
-fun_exp : '(' FUN fun_ids fun_body ')'
+fun_exp : '(' FUN fun_ids fun_body ')' {
+            //pass the params into the function
+        }
         ;
 fun_ids : '(' ids ')' {
             $$ = $2;
         }
         ;
-ids : ids ID
-    | ID
+ids : ids ID {
+
+    }
+    | ID {
+
+    }
     ;
 fun_body : exp {
                 $$ = $1;
@@ -274,7 +304,7 @@ param : exp
 last_exp : exp
          ;
 fun_name : variable {
-            $$ = getVarRecordPointer($1->name);
+            //$$ = getVarRecordPointer($1->name);
          }
          ;
 if_exp : '(' IF test_exp then_exp else_exp ')' {
@@ -345,6 +375,8 @@ int CountExpValue(Node* exp)
         case variableType:
             temp = getVarRecordPointer(exp->name);
             return varRecord[temp].var_value;
+        case functionType:
+            break;
         default:
             return 0;
     }
@@ -358,7 +390,18 @@ int getVarRecordPointer(char *name)
         if(strcmp(name, varRecord[i].var_name) == 0)
             return i;
     }
-    //can't find this variable
+    //can't find this variable (name)
+    return -1;
+}
+int getFunRecordPointer(char *name)
+{
+    for(int i=0;i<=funCurrentPointer;i++)
+    {
+        //find variable position
+        if(strcmp(name, funRecord[i].fun_name) == 0)
+            return i;
+    }
+    //can't find this function (name)
     return -1;
 }
 void createVar(char* name, int exp_value)
@@ -372,6 +415,18 @@ void createVar(char* name, int exp_value)
         varRecord[varCurrentPointer].var_name = name;
         varRecord[varCurrentPointer].var_value = exp_value;
     }
+}
+Fun* createFun()
+{
+    Fun* fun = malloc(sizeof(Fun));
+    return fun;
+}
+void addFunctionPara(Fun* fun, char* para)
+{
+    fun->params[fun->paraCount] = malloc((strlen(para)+1) * sizeof(char));
+    strcpy(fun->params[fun->paraCount], para);
+    fun->paraCount += 1;
+    return;
 }
 void yyerror(const char *message)
 {

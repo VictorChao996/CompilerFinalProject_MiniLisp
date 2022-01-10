@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//warning: captial letter word represent token 
+//notification: captial letter word represent token 
 int yylex();
 void yyerror(const char*message);
 
+// expType: mark type when creating exp node
 enum expType {
     plusType, minusType, mulType, divType, modType, 
     andType, orType, notType , equalType, greaterType, 
@@ -253,17 +254,12 @@ not_op : '(' NOT exp ')' {
         ;
 define_stmt : '(' DEFINE ID exp ')' {
                 //printf("define_stmt\n");
-                /*if($4->type == functionType)
-                {
-                    //create function record here
-                }
-                else if($4->type == variableType)
-                    createVar($3, CountExpValue($4));*/
+
                 int varPos = getVarRecordPointer($3);
                 if(varPos == -1)
-                    createVar($3, CountExpValue($4));
+                    createVar($3, CountExpValue($4));   //create new variable 
                 else
-                    varRecord[varPos].var_value = CountExpValue($4);
+                    varRecord[varPos].var_value = CountExpValue($4);    //reassign value to variable
             }
             ;
 variable : ID {
@@ -339,7 +335,7 @@ Node* CreateExpNode(int value, char* name, enum expType type)
     newNode->type = type;
     return newNode;
 }
-//count the current exp value (pre-order traversal)
+//count the current exp value 
 int CountExpValue(Node* exp)
 {
     if(exp == NULL)
@@ -382,6 +378,7 @@ int CountExpValue(Node* exp)
     }
 
 }
+//Use the variable name to check if this variale has been declared
 int getVarRecordPointer(char *name)
 {
     for(int i=0;i<=varCurrentPointer;i++)
@@ -393,17 +390,7 @@ int getVarRecordPointer(char *name)
     //can't find this variable (name)
     return -1;
 }
-int getFunRecordPointer(char *name)
-{
-    for(int i=0;i<=funCurrentPointer;i++)
-    {
-        //find variable position
-        if(strcmp(name, funRecord[i].fun_name) == 0)
-            return i;
-    }
-    //can't find this function (name)
-    return -1;
-}
+
 void createVar(char* name, int exp_value)
 {
     Node* newNode = CreateExpNode(exp_value,name, variableType);
@@ -415,6 +402,17 @@ void createVar(char* name, int exp_value)
         varRecord[varCurrentPointer].var_name = name;
         varRecord[varCurrentPointer].var_value = exp_value;
     }
+}
+int getFunRecordPointer(char *name)
+{
+    for(int i=0;i<=funCurrentPointer;i++)
+    {
+        //find variable position
+        if(strcmp(name, funRecord[i].fun_name) == 0)
+            return i;
+    }
+    //can't find this function (name)
+    return -1;
 }
 Fun* createFun()
 {

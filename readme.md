@@ -1,4 +1,8 @@
 # Compiler final project- MiniLisp interpreter
+## related info
+- MiniLisp.pdf:  
+   Briefly introduce Lisp language and show the overview.  
+There is also lexical details(grammer) about miniLisp if you want to write .l and .y file by yourself.
 ## Implement Feature:
 - Syntax Validation
 - Print
@@ -7,6 +11,13 @@
 - if Expression
 - Variable Definition
 - Redefine Variable
+## Feature not implemented yet
+- Function
+- Name Function
+- Recursion
+- Type Checking
+- Nested Function
+- First-class Function
 
 ## How to run
 - 使用附件Makefile,在terminal中直接輸入 make 指令 
@@ -38,3 +49,6 @@
 (print-num (+ x y))  --> 600  
 (define x 55)    
 (print-num x)  --> 55  
+
+## Precautions
+the code in this project may be incorrect.Feel free to ask me if you find any questions, thanks!
